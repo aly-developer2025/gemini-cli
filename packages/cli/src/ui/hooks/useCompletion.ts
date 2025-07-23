@@ -392,13 +392,10 @@ export function useCompletion(
       });
 
       const suggestions: Suggestion[] = files
-        .map((file: string) => {
-          const relativePath = path.relative(cwd, file);
-          return {
-            label: relativePath,
-            value: escapePath(relativePath),
-          };
-        })
+        .map((file: string) => ({
+          label: file,
+          value: escapePath(file),
+        }))
         .filter((s) => {
           if (fileDiscoveryService) {
             return !fileDiscoveryService.shouldIgnoreFile(
@@ -440,7 +437,7 @@ export function useCompletion(
             fetchedSuggestions = await findFilesRecursively(
               cwd,
               prefix,
-              fileDiscoveryService,
+              null,
               filterOptions,
             );
           }
@@ -482,6 +479,13 @@ export function useCompletion(
             };
           });
         }
+
+        // Like glob, we always return forwardslashes, even in windows.
+        fetchedSuggestions = fetchedSuggestions.map((suggestion) => ({
+          ...suggestion,
+          label: suggestion.label.replace(/\\/g, '/'),
+          value: suggestion.value.replace(/\\/g, '/'),
+        }));
 
         // Sort by depth, then directories first, then alphabetically
         fetchedSuggestions.sort((a, b) => {
